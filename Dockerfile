@@ -1,5 +1,5 @@
 # Stage 1: Base Image & Environment
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Stage 2: Security & Environment Variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
