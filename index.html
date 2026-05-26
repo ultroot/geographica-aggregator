@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geographica Travels - Flight Aggregator</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 2rem; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background-color: #f9f9f9;
+        }
+        .search-container {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .flight-card { 
+            background: #fff;
+            border: 1px solid #e2e8f0; 
+            padding: 1.25rem; 
+            margin-bottom: 1rem; 
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .error-message { 
+            color: #dc2626; 
+            font-weight: 500;
+            padding: 1rem;
+            border-left: 4px solid #dc2626;
+            background-color: #fef2f2;
+        }
+        input { 
+            padding: 0.5rem; 
+            margin-right: 0.5rem; 
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        button { 
+            padding: 0.5rem 1rem; 
+            background-color: #2563eb; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+        }
+        button:hover { background-color: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <h1>Geographica Travels Aggregator</h1>
+    
+    <div class="search-container">
+        <input type="text" id="origin" placeholder="Origin (e.g. DEL)" pattern="[A-Za-z]{3}" maxlength="3" required>
+        <input type="text" id="destination" placeholder="Dest (e.g. LHR)" pattern="[A-Za-z]{3}" maxlength="3" required>
+        <button onclick="searchFlights()">Search Flights</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        async function searchFlights() {
+            const originInput = document.getElementById('origin').value.toUpperCase();
+            const destinationInput = document.getElementById('destination').value.toUpperCase();
+            const resultsDiv = document.getElementById('results');
+
+            // Pre-validation guardrail
+            if (originInput.length !== 3 || destinationInput.length !== 3) {
+                resultsDiv.innerHTML = "<p class='error-message'>System Error: IATA codes must be exactly 3 letters.</p>";
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p style="color: #64748b;">Querying B2B vendors...</p>';
+
+            try {
+                // Adjust this route to match your FastAPI endpoints if necessary
+                const response = await fetch(`http://127.0.0.1:8000/search?origin=${originInput}&destination=${destinationInput}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                resultsDiv.innerHTML = ''; 
+
+                if (data.flight_options && data.flight_options.length > 0) {
+                    data.flight_options.forEach((flight, index) => {
+                        resultsDiv.innerHTML += `
+                            <div class="flight-card">
+                                <strong>Route:</strong> ${flight.origin} ✈ ${flight.destination} <br>
+                                <strong>Date:</strong> ${flight.date} <br>
+                                <h4 style="margin: 8px 0; color: #16a34a;">Price: $${flight.price}</h4>
+                            </div>
+                        `;
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<p>No flights found for this routing configuration.</p>';
+                }
+            } catch (error) {
+                // Clean error fallback replacing the previously corrupted block
+                console.error("Aggregator Fetch Error:", error);
+                resultsDiv.innerHTML = `
+                    <div class='error-message'>
+                        API Connection Failure: Unable to reach the Geographica Backend. 
+                        <br><br>
+                        <strong>Diagnostic Steps:</strong><br>
+                        1. Ensure Uvicorn is running on port 8000.<br>
+                        2. Verify the CORS middleware is configured to accept requests from this origin.
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
