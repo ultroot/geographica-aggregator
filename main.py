@@ -1,51 +1,28 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import random
+import re
 
-app = FastAPI(title="Geographica Aggregator API")
+app = FastAPI(title="Geographica Travels Aggregator")
 
-# DEVSECOPS: CORS Policy Implementation
+# CORS Policy to allow the decoupled HTML frontend to connect
 app.add_middleware(
     CORSMiddleware,
-    # IN PRODUCTION: This is restricted to the specific domain (e.g., ["https://geographicaltravels.com"])
-    # Using "*" is only permitted in the local development laboratory.
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
-    # Principle of Least Privilege: We explicitly whitelist only GET requests. 
-    # If an attacker attempts a POST or DELETE payload, the firewall drops it at the perimeter.
-    allow_methods=["GET"], 
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-VENDORS = ["Akbar Travels", "Travelboutique", "MakeMyTrip B2B", "FTD Travels"]
-
-@app.get("/")
-def read_root():
-    return {"status": "success", "message": "Geographica Aggregator Engine is Live!"}
-
-# Strict Input Validation Endpoint
-@app.get("/api/flights/search")
-def search_flights(
-    origin: str = Query(..., min_length=3, max_length=3, pattern="^[A-Za-z]+$"),
-    destination: str = Query(..., min_length=3, max_length=3, pattern="^[A-Za-z]+$"),
-    date: str = Query(..., min_length=10, max_length=10)
-):
-    results = []
-    for vendor in VENDORS:
-        results.append({
-            "vendor": vendor,
-            "origin": origin.upper(),
-            "destination": destination.upper(),
-            "date": date,
-            "price": random.randint(12000, 18000)
-        })
+@app.get("/search")
+async def search_flights(origin: str, destination: str):
+    # Strict 3-letter IATA code validation
+    if not re.match(r"^[A-Z]{3}$", origin.upper()) or not re.match(r"^[A-Z]{3}$", destination.upper()):
+        raise HTTPException(status_code=400, detail="System Error: IATA codes must be exactly 3 letters.")
     
-    # The Sorting Algorithm
-    sorted_results = sorted(results, key=lambda flight: flight["price"])
-    
+    # Mock B2B Vendor Aggregation Logic
     return {
-        "message": "Flights retrieved successfully",
-        "total_vendors_searched": len(VENDORS),
-        "cheapest_available": sorted_results["price"],
-        "flight_options": sorted_results
+        "flight_options": [
+            {"origin": origin.upper(), "destination": destination.upper(), "date": "2026-06-15", "price": 450},
+            {"origin": origin.upper(), "destination": destination.upper(), "date": "2026-06-15", "price": 480}
+        ]
     }

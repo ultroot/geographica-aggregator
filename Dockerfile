@@ -18,7 +18,7 @@ WORKDIR /app
 
 # Stage 5: Dependency Installation (Caching Layer)
 COPY requirements.txt .
-RUN pip install --upgrade pip setuptools wheel>=0.46.2 jaraco.context>=6.1.0 \
+RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Stage 6: Application Code
